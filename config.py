@@ -1,6 +1,6 @@
 import time
 
-# Keys to press
+# Keys to press;
 firstKey, secondKey = input("Press usable keys: ")
 firstKeyCode = ord(firstKey)
 secondKeyCode = ord(secondKey)

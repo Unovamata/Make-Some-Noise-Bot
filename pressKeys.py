@@ -10,19 +10,27 @@ with open(config.filepath, 'r') as file:
     contentList = file.readlines()
 
 contentList = [float(line.strip()) for line in contentList]
-random.shuffle(contentList);
 
 config.CountdownCaller()
 
 isFirstKey = True
 breakWhile = False
 firstKey, secondKey = config.VK_CODE.get(config.firstKey), config.VK_CODE.get(config.secondKey)
-waitTimeMultiplicator = random.randrange(60, 65)
+
+def GetKeys():
+    config.firstKey, config.secondKey = input("Press usable keys: ")
+    config.firstKeyCode = ord(config.firstKey)
+    config.secondKeyCode = ord(config.secondKey)
 
 while True:
+    waitTimeMultiplicator = random.randrange(60, 70)
+    random.shuffle(contentList);
+    
     for lineTime in contentList:
-        if keyboard.is_pressed(' '):
+        if keyboard.is_pressed('0'):
             breakWhile = True
+            break
+        elif keyboard.is_pressed(' '):
             break
 
         if isFirstKey:
@@ -36,6 +44,8 @@ while True:
             ctypes.windll.user32.keybd_event(secondKey, 0, 2, 0)
             isFirstKey = True
 
-
     if breakWhile:
         break
+
+    GetKeys()
+    firstKey, secondKey = config.VK_CODE.get(config.firstKey), config.VK_CODE.get(config.secondKey)
