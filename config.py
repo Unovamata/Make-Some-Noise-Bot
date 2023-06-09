@@ -1,7 +1,12 @@
 import time
+import keyboard
 import pyautogui
 import cv2
 import numpy as np
+from PIL import ImageGrab
+import pytesseract
+
+pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
 
 # Keys to press;
 firstKey, secondKey = input("Press usable keys: ")
@@ -26,38 +31,79 @@ filepath = "timestamps.txt"
 # The time to wait for the script to start
 countdown = [3, 2, 1, 'GO!']
 
+
 def CountdownCaller():
     for item in countdown:
         print(item)
         time.sleep(1)
 
+
 # Selecting the screenshot area
 topLeft, bottomRight = None, None
+selecting = False
+
 
 def MouseEventHandler(event, x, y, flags, param):
-    global topLeft, bottomRight
+    global topLeft, bottomRight, selecting
 
     if event == cv2.EVENT_LBUTTONDOWN:
         topLeft = (x, y)
+        selecting = True
     elif event == cv2.EVENT_LBUTTONUP:
         bottomRight = (x, y)
-        cv2.destroyAllWindows()
+        selecting = False
+
 
 # Create a window that will handle the mouse up and down event
 windowName = "Select Area"
 cv2.namedWindow(windowName)
 cv2.setMouseCallback(windowName, MouseEventHandler)
 
-screenshot = pyautogui.screenshot()
-screenshot = cv2.cvtColor(np.array(screenshot), cv2.COLOR_RGB2BGR)
+
+def TakeScreenshot():
+    screenshot = ImageGrab.grab()
+    screenshot.save("screenshot.png")
+    screenshot = cv2.cvtColor(np.array(screenshot), cv2.COLOR_RGB2BGR)
+    clone = screenshot.copy()
+    return clone
+
+clone = TakeScreenshot()
 
 while True:
-    cv2.imshow(windowName, screenshot)
-    if(cv2.waitKey(1) & 0xFF == ord("q")):
+    if clone is not None:
+        if selecting:
+            cv2.rectangle(clone, topLeft, (pyautogui.position().x, pyautogui.position().y), (0, 255, 0), 2)
+        cv2.imshow(windowName, clone)
+    else:
+        clone = TakeScreenshot()
+
+    eraseKey = keyboard.is_pressed('S')
+
+    if eraseKey:
+        print("delete")
+        clone = None
+
+    breakKey = cv2.waitKey(1) & 0xFF == ord("q")
+
+    if breakKey:
         break
 
-x1, y1 = topLeft
-x2, y2 = bottomRight
+cv2.destroyAllWindows()
 
-selectedRegion = pyautogui.screenshot(region=(x1, y1, x2 - x1, y2 - y1))
-selectedRegion.save("region.png")
+def TakeScreenshotInRegion(top, bottom):
+    x1, y1 = top
+    x2, y2 = pyautogui.position()
+    x1, x2 = min(x1, x2), max(x1, x2)
+    y1, y2 = min(y1, y2), max(y1, y2)
+
+    selectedRegion = pyautogui.screenshot(region=(x1, y1, x2 - x1, y2 - y1))
+    selectedRegion.save("region.png")
+    return selectedRegion
+
+if topLeft is not None and bottomRight is not None:
+    selectedRegion = TakeScreenshotInRegion(topLeft, bottomRight)
+    text = pytesseract.image_to_string(selectedRegion)
+    print(text)
+else:
+    print("Region not defined")
+
