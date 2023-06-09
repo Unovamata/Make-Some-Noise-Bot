@@ -25,15 +25,19 @@ def GetKeys():
     config.firstKeyCode = ord(config.firstKey)
     config.secondKeyCode = ord(config.secondKey)
 
+customConfig = r'--oem 3 --psm 7'
+checkForScore = 0
+
 while True:
     waitTimeMultiplicator = random.randrange(60, 70)
-    random.shuffle(contentList);
-    
+    random.shuffle(contentList)
+    score = 0
+    scoreScreenshot = None
+    scoreString = ""
+
     for lineTime in contentList:
         if keyboard.is_pressed('0'):
             breakWhile = True
-            break
-        elif keyboard.is_pressed(' '):
             break
 
         if isFirstKey:
@@ -46,6 +50,23 @@ while True:
             time.sleep(lineTime * waitTimeMultiplicator)
             ctypes.windll.user32.keybd_event(secondKey, 0, 2, 0)
             isFirstKey = True
+
+        if checkForScore >= config.checkIterationThreshold:
+            scoreScreenshot = config.TakeScreenshotInRegion(config.topLeft, config.bottomRight)
+            scoreString = pytesseract.image_to_string(scoreScreenshot, config=customConfig)
+            checkForScore = 0
+
+        checkForScore += 1
+
+        try:
+            score = int(scoreString)
+            
+            if score >= config.scoreThreshold:
+                ctypes.windll.user32.keybd_event(config.VK_CODE.get(' '), 0, 0, 0)
+                break
+
+        except:
+            score = 0
 
     if breakWhile:
         break
