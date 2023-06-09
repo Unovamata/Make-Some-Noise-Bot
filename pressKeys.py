@@ -3,6 +3,9 @@ import keyboard
 import config
 import random
 import ctypes
+import pyautogui
+from PIL import Image
+import pytesseract
 
 contentList = []
 

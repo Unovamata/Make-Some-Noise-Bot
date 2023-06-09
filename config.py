@@ -1,4 +1,7 @@
 import time
+import pyautogui
+import cv2
+import numpy as np
 
 # Keys to press;
 firstKey, secondKey = input("Press usable keys: ")
@@ -27,3 +30,34 @@ def CountdownCaller():
     for item in countdown:
         print(item)
         time.sleep(1)
+
+# Selecting the screenshot area
+topLeft, bottomRight = None, None
+
+def MouseEventHandler(event, x, y, flags, param):
+    global topLeft, bottomRight
+
+    if event == cv2.EVENT_LBUTTONDOWN:
+        topLeft = (x, y)
+    elif event == cv2.EVENT_LBUTTONUP:
+        bottomRight = (x, y)
+        cv2.destroyAllWindows()
+
+# Create a window that will handle the mouse up and down event
+windowName = "Select Area"
+cv2.namedWindow(windowName)
+cv2.setMouseCallback(windowName, MouseEventHandler)
+
+screenshot = pyautogui.screenshot()
+screenshot = cv2.cvtColor(np.array(screenshot), cv2.COLOR_RGB2BGR)
+
+while True:
+    cv2.imshow(windowName, screenshot)
+    if(cv2.waitKey(1) & 0xFF == ord("q")):
+        break
+
+x1, y1 = topLeft
+x2, y2 = bottomRight
+
+selectedRegion = pyautogui.screenshot(region=(x1, y1, x2 - x1, y2 - y1))
+selectedRegion.save("region.png")
