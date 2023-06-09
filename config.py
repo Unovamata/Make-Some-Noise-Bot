@@ -3,11 +3,16 @@ import keyboard
 import pyautogui
 import cv2
 import numpy as np
-from PIL import ImageGrab
+from PIL import ImageGrab, Image
 import pytesseract
 import random
 
 pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+
+# Image recognition loading
+startGameImage = Image.open("Start Game.png")
+submitPointsImage = Image.open("Submit Points.png")
+closeImage = Image.open("Close.png")
 
 # Score threshold
 scoreThreshold = 2700
@@ -47,6 +52,13 @@ def CountdownCaller():
 topLeft, bottomRight = None, None
 selecting = False
 
+# Take a screenshot of the entire screen;
+def TakeScreenshot():
+    screenshot = ImageGrab.grab()
+    screenshot = cv2.cvtColor(np.array(screenshot), cv2.COLOR_RGB2BGR)
+    return screenshot
+
+clone = TakeScreenshot()
 
 # Mouse manager function for reading coordinates based on events
 def MouseEventHandler(event, x, y, flags, param):
@@ -58,23 +70,16 @@ def MouseEventHandler(event, x, y, flags, param):
     elif event == cv2.EVENT_LBUTTONUP:
         selecting = False
 
+def OpenSelectionWindow(name):
+    global bottomRight
 
-# Create a window that will handle the mouse up and down event
-windowName = "Select Area. (Update Screenshot by Pressing 'S', Save the changes with 'Q')"
-cv2.namedWindow(windowName)
-cv2.setMouseCallback(windowName, MouseEventHandler)
+    # Create a window that will handle the mouse up and down event
+    windowName = name + ". (Update Screenshot by Pressing 'S', Save the changes with 'Q')"
+    cv2.namedWindow(windowName)
+    cv2.setMouseCallback(windowName, MouseEventHandler)
 
+    clone = None # Screenshot taken
 
-# Take a screenshot of the entire screen;
-def TakeScreenshot():
-    screenshot = ImageGrab.grab()
-    screenshot = cv2.cvtColor(np.array(screenshot), cv2.COLOR_RGB2BGR)
-    return screenshot
-
-
-clone = TakeScreenshot()
-
-def OpenSelectionWindow():
     # Screenshot updating and data saving
     while True:
         # If the clone is not null, allow me to draw a rectangle:
@@ -98,7 +103,12 @@ def OpenSelectionWindow():
 
     cv2.destroyAllWindows()
 
-OpenSelectionWindow()
+OpenSelectionWindow("Select Score Area")
+selectTopLeft, selectBottomRight = topLeft, bottomRight
+OpenSelectionWindow("Select First Letter Area")
+key1TopLeft, key1BottomRight = topLeft, bottomRight
+OpenSelectionWindow("Select Second Letter Area")
+key2TopLeft, key2BottomRight = topLeft, bottomRight
 
 def TakeScreenshotInRegion(top, bottom):
     x1, y1 = top
@@ -110,8 +120,7 @@ def TakeScreenshotInRegion(top, bottom):
     return selectedRegion
 
 if topLeft is not None:
-    selectedRegion = TakeScreenshotInRegion(topLeft, bottomRight)
+    selectedRegion = TakeScreenshotInRegion(selectTopLeft, selectBottomRight)
     text = pytesseract.image_to_string(selectedRegion)
-    print(text)
 else:
     print("Region not defined")

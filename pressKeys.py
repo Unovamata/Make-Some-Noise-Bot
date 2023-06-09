@@ -20,6 +20,8 @@ isFirstKey = True
 breakWhile = False
 firstKey, secondKey = config.VK_CODE.get(config.firstKey), config.VK_CODE.get(config.secondKey)
 
+
+
 def GetKeys():
     config.firstKey, config.secondKey = input("Press usable keys: ")
     config.firstKeyCode = ord(config.firstKey)
@@ -28,8 +30,37 @@ def GetKeys():
 customConfig = r'--oem 3 --psm 7'
 checkForScore = 0
 
+def ScrollToPosition(result):
+    if result is not None:
+        left, top, width, height = result
+
+        centerX = left + width // 2
+        centerY = top + height // 2
+
+        return centerX, centerY
+    return None
+
+def GetKeysFromImage():
+    screenshot = config.TakeScreenshotInRegion(config.key1TopLeft, config.key1BottomRight)
+    text = pytesseract.image_to_string(screenshot)
+    print(text)
+
 while True:
-    waitTimeMultiplicator = random.randrange(60, 70)
+    while True:
+        # Find the start game button
+        startGameFound = pyautogui.locate(config.startGameImage, config.TakeScreenshot(), confidence=0.8)
+        mousePosition = ScrollToPosition(startGameFound)
+
+        if mousePosition is not None:
+            pyautogui.moveTo(mousePosition, duration=random.uniform(0.8, 1.2), tween=pyautogui.easeInOutQuad)
+
+        if mousePosition == pyautogui.position():
+            pyautogui.leftClick()
+            break
+
+    while True:
+
+    waitTimeMultiplicator = random.randrange(55, 65)
     random.shuffle(contentList)
     score = 0
     scoreScreenshot = None
@@ -52,7 +83,7 @@ while True:
             isFirstKey = True
 
         if checkForScore >= config.checkIterationThreshold:
-            scoreScreenshot = config.TakeScreenshotInRegion(config.topLeft, config.bottomRight)
+            scoreScreenshot = config.TakeScreenshotInRegion(config.selectTopLeft, config.selectBottomRight)
             scoreString = pytesseract.image_to_string(scoreScreenshot, config=customConfig)
             checkForScore = 0
 
@@ -60,7 +91,7 @@ while True:
 
         try:
             score = int(scoreString)
-            
+
             if score >= config.scoreThreshold:
                 ctypes.windll.user32.keybd_event(config.VK_CODE.get(' '), 0, 0, 0)
                 break
