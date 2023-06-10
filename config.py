@@ -19,11 +19,6 @@ keyImage = Image.open("Key.png")
 scoreThreshold = 2700
 checkIterationThreshold = random.randrange(30, 50)
 
-# Keys to press;
-firstKey, secondKey = input("Press usable inputs: ")
-firstKeyCode = ord(firstKey)
-secondKeyCode = ord(secondKey)
-
 VK_CODE = {
     'A': 0x41, 'B': 0x42, 'C': 0x43, 'D': 0x44, 'E': 0x45,
     'F': 0x46, 'G': 0x47, 'H': 0x48, 'I': 0x49, 'J': 0x4A,

@@ -20,7 +20,6 @@ config.CountdownCaller()
 
 isFirstKey = True
 breakWhile = False
-firstKey, secondKey = config.VK_CODE.get(config.firstKey), config.VK_CODE.get(config.secondKey)
 
 customConfig = r'--oem 3 --psm 7'
 checkForScore = 0
@@ -44,10 +43,14 @@ def GetKeysFromImage(keyImage):
     key = key[0]
     return key
 
-def GetKeys():
-    config.firstKeyCode = ord(config.firstKey)
-    config.secondKeyCode = ord(config.secondKey)
-    firstKey, secondKey = config.VK_CODE.get(config.firstKey), config.VK_CODE.get(config.secondKey)
+firstKey, secondKey = None, None
+
+def GetKeys(first, second):
+    global firstKey, secondKey
+
+    firstKey, secondKey = config.VK_CODE.get(ord(first)), config.VK_CODE.get(ord(second))
+
+firstKeyPress, secondKeyPress = None, None
 
 while True:
     print("Looking the Start Game Button...")
@@ -68,22 +71,24 @@ while True:
     screenshot = config.TakeScreenshot()
     keysString = []
 
-    for key in pyautogui.locateAll(config.keyImage, screenshot, confidence=0.8):
+    for index, key in enumerate(pyautogui.locateAll(config.keyImage, screenshot, confidence=0.8)):
         left, top, width, height = key
         left += 10
         top += 10
         width -= 20
         height -= 20
         screenshotRegion = Image.fromarray(screenshot).crop((left, top, left + width, top + height))
-        screenshotRegion.save(str(time.time()) + ".png")
-        keysString.append(GetKeysFromImage(screenshotRegion))
 
-    for key in keysString:
-        print(key)
+        if index == 0:
+            firstKeyPress = GetKeysFromImage(screenshotRegion)
+        else:
+            secondKeyPress = GetKeysFromImage(screenshotRegion)
 
     print("Key images found!")
-    print("Keys found! Key 1:" + str(firstKey) + " | Key 2:" + str(secondKey) + " |")
-    GetKeys()
+    print("Keys found! Key 1:" + str(firstKeyPress) + " | Key 2:" + str(secondKeyPress) + " |")
+    firstKey = config.VK_CODE.get(firstKeyPress)
+    secondKey = config.VK_CODE.get(secondKeyPress)
+    print(firstKey, secondKey)
 
     # Reset values
     waitTimeMultiplicator = random.randrange(55, 65)
@@ -92,6 +97,7 @@ while True:
     scoreScreenshot = None
     scoreString = ""
 
+    print("Pressing keys!")
     for lineTime in contentList:
         if keyboard.is_pressed('0'):
             breakWhile = True
