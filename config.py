@@ -12,12 +12,14 @@ pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tessera
 # Image recognition loading
 startGameImage = Image.open("Start Game.png")
 submitPointsImage = Image.open("Submit Points.png")
+restartGameImage = Image.open("Restart Game.png")
 closeImage = Image.open("Close.png")
 keyImage = Image.open("Key.png")
 
 # Score threshold
 scoreThreshold = 2700
-checkIterationThreshold = random.randrange(30, 50)
+checkIterationThreshold = random.randrange(30, 45)
+gamesToPlay = 290
 
 VK_CODE = {
     'A': 0x41, 'B': 0x42, 'C': 0x43, 'D': 0x44, 'E': 0x45,

@@ -33,20 +33,25 @@ def ScrollToPosition(result):
 def GetKeysFromImage(keyImage):
     gray = cv2.cvtColor(np.array(keyImage), cv2.COLOR_BGR2GRAY)
     _, binary_image = cv2.threshold(gray, 127, 255, cv2.THRESH_BINARY)
-    key = pytesseract.image_to_string(binary_image, lang='eng', config='--psm 6')
 
-    key = key.replace(" ", "").replace("\n", "")
-    key = key[0]
-    return key
+    keyFormat = pytesseract.image_to_string(binary_image, lang='eng', config='--psm 6')
+
+    keyFormat = keyFormat.replace(" ", "").replace("\n", "")
+
+    try:
+        keyFormat = keyFormat[0]
+    except:
+        keyFormat = ""
+
+    return keyFormat
 
 firstKey, secondKey = None, None
+firstKeyPress, secondKeyPress = None, None
 
 def GetKeys(first, second):
     global firstKey, secondKey
 
     firstKey, secondKey = config.VK_CODE.get(ord(first)), config.VK_CODE.get(ord(second))
-
-firstKeyPress, secondKeyPress = None, None
 
 def FindImageAndMoveMouseTo(image):
     while True:
@@ -55,7 +60,7 @@ def FindImageAndMoveMouseTo(image):
         mousePosition = ScrollToPosition(startGameFound)
 
         if mousePosition is not None:
-            pyautogui.moveTo(mousePosition, duration=random.uniform(0.8, 2), tween=pyautogui.easeInOutQuad)
+            pyautogui.moveTo(mousePosition, duration=random.uniform(0.5, 1.2), tween=pyautogui.easeInOutQuad)
 
         if mousePosition == pyautogui.position():
             pyautogui.leftClick()
@@ -63,10 +68,18 @@ def FindImageAndMoveMouseTo(image):
 
 # Loop parameters
 breakWhile = False
+keysFailsafe = False
 isFirstKey = True
 checkForScore = 0
+gamesPlayed = 0
 
 while True:
+    # Not allowing the bot to go infinitely as there's a limit to the scores that can be submitted
+    print(f"Games played: {gamesPlayed} of {config.gamesToPlay}")
+    gamesPlayed += 1
+    if gamesPlayed > config.gamesToPlay:
+        break
+
     print("Looking the Start Game Button...")
     FindImageAndMoveMouseTo(config.startGameImage)
 
@@ -92,21 +105,23 @@ while True:
                 secondKeyPress = GetKeysFromImage(screenshotRegion)
 
         if firstKeyPress is not None and secondKeyPress is not None:
-            break
+            if firstKeyPress != ' ' and secondKeyPress != ' ':
+                break
 
     # Key configuration
     print("Key images found!")
     print("Keys found! Key 1:" + str(firstKeyPress) + " | Key 2:" + str(secondKeyPress) + " |")
     firstKey = config.VK_CODE.get(firstKeyPress)
     secondKey = config.VK_CODE.get(secondKeyPress)
-    print(firstKey, secondKey)
 
     # Reset values
+    config.checkIterationThreshold = random.randrange(30, 45)
     waitTimeMultiplicator = random.randrange(55, 65)
     random.shuffle(contentList)
     score = 0
     scoreScreenshot = None
     scoreString = ""
+    keysFailsafe = False
 
     print("Pressing keys!")
     for lineTime in contentList:
@@ -141,9 +156,17 @@ while True:
                 if score >= config.scoreThreshold:
                     ctypes.windll.user32.keybd_event(config.VK_CODE.get(' '), 0, 0, 0)
                     break
+                else:
+                    if pyautogui.locate(config.restartGameImage, config.TakeScreenshot(), confidence=0.6):
+                        keysFailsafe = True
+                        break
             # If it was not possible, the score may not be parseable
             except:
                 score = 0
+
+                if pyautogui.locate(config.restartGameImage, config.TakeScreenshot(), confidence=0.6):
+                    keysFailsafe = True
+                    break
 
             checkForScore = 0 # and reset the threshold
 
@@ -155,11 +178,15 @@ while True:
         break
 
     # Find the submit points image
-    print("Submitting points...")
-    FindImageAndMoveMouseTo(config.submitPointsImage)
+    if keysFailsafe is False:
+        print("Submitting points...")
+        FindImageAndMoveMouseTo(config.submitPointsImage)
 
-    # Close the game window as soon as it is found, as the score sending is an async task in the page
-    print("Closing the submit window...")
-    FindImageAndMoveMouseTo(config.closeImage)
+        # Close the game window as soon as it is found, as the score sending is an async task in the page
+        print("Closing the submit window...")
+        FindImageAndMoveMouseTo(config.closeImage)
+    else:
+        print("Keys were not recognized correctly, restarting...")
+        FindImageAndMoveMouseTo(config.restartGameImage)
 
 print("Bot killed")
