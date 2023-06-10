@@ -13,6 +13,7 @@ pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tessera
 startGameImage = Image.open("Start Game.png")
 submitPointsImage = Image.open("Submit Points.png")
 closeImage = Image.open("Close.png")
+keyImage = Image.open("Key.png")
 
 # Score threshold
 scoreThreshold = 2700
@@ -77,6 +78,7 @@ def OpenSelectionWindow(name):
     windowName = name + ". (Update Screenshot by Pressing 'S', Save the changes with 'Q')"
     cv2.namedWindow(windowName)
     cv2.setMouseCallback(windowName, MouseEventHandler)
+    cv2.setWindowProperty(windowName, cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
 
     clone = None # Screenshot taken
 
@@ -105,10 +107,6 @@ def OpenSelectionWindow(name):
 
 OpenSelectionWindow("Select Score Area")
 selectTopLeft, selectBottomRight = topLeft, bottomRight
-OpenSelectionWindow("Select First Letter Area")
-key1TopLeft, key1BottomRight = topLeft, bottomRight
-OpenSelectionWindow("Select Second Letter Area")
-key2TopLeft, key2BottomRight = topLeft, bottomRight
 
 def TakeScreenshotInRegion(top, bottom):
     x1, y1 = top

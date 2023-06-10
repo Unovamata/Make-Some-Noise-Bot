@@ -4,8 +4,10 @@ import config
 import random
 import ctypes
 import pyautogui
+import cv2
 from PIL import Image
 import pytesseract
+import numpy as np
 
 contentList = []
 
@@ -20,13 +22,6 @@ isFirstKey = True
 breakWhile = False
 firstKey, secondKey = config.VK_CODE.get(config.firstKey), config.VK_CODE.get(config.secondKey)
 
-
-
-def GetKeys():
-    config.firstKey, config.secondKey = input("Press usable keys: ")
-    config.firstKeyCode = ord(config.firstKey)
-    config.secondKeyCode = ord(config.secondKey)
-
 customConfig = r'--oem 3 --psm 7'
 checkForScore = 0
 
@@ -40,15 +35,25 @@ def ScrollToPosition(result):
         return centerX, centerY
     return None
 
-def GetKeysFromImage():
-    screenshot = config.TakeScreenshotInRegion(config.key1TopLeft, config.key1BottomRight)
-    text = pytesseract.image_to_string(screenshot)
-    print(text)
+def GetKeysFromImage(keyImage):
+    gray = cv2.cvtColor(np.array(keyImage), cv2.COLOR_BGR2GRAY)
+    _, binary_image = cv2.threshold(gray, 127, 255, cv2.THRESH_BINARY)
+    key = pytesseract.image_to_string(binary_image, lang='eng', config='--psm 6')
+
+    key = key.replace(" ", "").replace("\n", "")
+    key = key[0]
+    return key
+
+def GetKeys():
+    config.firstKeyCode = ord(config.firstKey)
+    config.secondKeyCode = ord(config.secondKey)
+    firstKey, secondKey = config.VK_CODE.get(config.firstKey), config.VK_CODE.get(config.secondKey)
 
 while True:
-    while True:
+    print("Looking the Start Game Button...")
+    """while True:
         # Find the start game button
-        startGameFound = pyautogui.locate(config.startGameImage, config.TakeScreenshot(), confidence=0.8)
+        startGameFound = pyautogui.locate(config.startGameImage, config.TakeScreenshot(), confidence=0.6)
         mousePosition = ScrollToPosition(startGameFound)
 
         if mousePosition is not None:
@@ -56,10 +61,31 @@ while True:
 
         if mousePosition == pyautogui.position():
             pyautogui.leftClick()
-            break
+            break"""
 
-    while True:
+    print("Looking for key image...")
 
+    screenshot = config.TakeScreenshot()
+    keysString = []
+
+    for key in pyautogui.locateAll(config.keyImage, screenshot, confidence=0.8):
+        left, top, width, height = key
+        left += 10
+        top += 10
+        width -= 20
+        height -= 20
+        screenshotRegion = Image.fromarray(screenshot).crop((left, top, left + width, top + height))
+        screenshotRegion.save(str(time.time()) + ".png")
+        keysString.append(GetKeysFromImage(screenshotRegion))
+
+    for key in keysString:
+        print(key)
+
+    print("Key images found!")
+    print("Keys found! Key 1:" + str(firstKey) + " | Key 2:" + str(secondKey) + " |")
+    GetKeys()
+
+    # Reset values
     waitTimeMultiplicator = random.randrange(55, 65)
     random.shuffle(contentList)
     score = 0
@@ -101,6 +127,3 @@ while True:
 
     if breakWhile:
         break
-
-    GetKeys()
-    firstKey, secondKey = config.VK_CODE.get(config.firstKey), config.VK_CODE.get(config.secondKey)
