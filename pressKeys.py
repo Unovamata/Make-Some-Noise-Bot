@@ -9,6 +9,7 @@ from PIL import Image
 import pytesseract
 import numpy as np
 
+# Load timestamp list for key presses
 contentList = []
 
 with open(config.filepath, 'r') as file:
@@ -16,13 +17,8 @@ with open(config.filepath, 'r') as file:
 
 contentList = [float(line.strip()) for line in contentList]
 
+# Setting up a countdown after start
 config.CountdownCaller()
-
-isFirstKey = True
-breakWhile = False
-
-customConfig = r'--oem 3 --psm 7'
-checkForScore = 0
 
 def ScrollToPosition(result):
     if result is not None:
@@ -52,38 +48,53 @@ def GetKeys(first, second):
 
 firstKeyPress, secondKeyPress = None, None
 
-while True:
-    print("Looking the Start Game Button...")
-    """while True:
+def FindImageAndMoveMouseTo(image):
+    while True:
         # Find the start game button
-        startGameFound = pyautogui.locate(config.startGameImage, config.TakeScreenshot(), confidence=0.6)
+        startGameFound = pyautogui.locate(image, config.TakeScreenshot(), confidence=0.6)
         mousePosition = ScrollToPosition(startGameFound)
 
         if mousePosition is not None:
-            pyautogui.moveTo(mousePosition, duration=random.uniform(0.8, 1.2), tween=pyautogui.easeInOutQuad)
+            pyautogui.moveTo(mousePosition, duration=random.uniform(0.8, 2), tween=pyautogui.easeInOutQuad)
 
         if mousePosition == pyautogui.position():
             pyautogui.leftClick()
-            break"""
+            break
+
+# Loop parameters
+breakWhile = False
+isFirstKey = True
+checkForScore = 0
+
+while True:
+    print("Looking the Start Game Button...")
+    FindImageAndMoveMouseTo(config.startGameImage)
 
     print("Looking for key image...")
+    firstKeyPress, secondKeyPress = None, None
 
-    screenshot = config.TakeScreenshot()
-    keysString = []
+    # Search keys in a screenshot
+    while True:
+        screenshot = config.TakeScreenshot()
+        keysString = []
 
-    for index, key in enumerate(pyautogui.locateAll(config.keyImage, screenshot, confidence=0.8)):
-        left, top, width, height = key
-        left += 10
-        top += 10
-        width -= 20
-        height -= 20
-        screenshotRegion = Image.fromarray(screenshot).crop((left, top, left + width, top + height))
+        for index, key in enumerate(pyautogui.locateAll(config.keyImage, screenshot, confidence=0.8)):
+            left, top, width, height = key
+            left += 10
+            top += 10
+            width -= 20
+            height -= 20
+            screenshotRegion = Image.fromarray(screenshot).crop((left, top, left + width, top + height))
 
-        if index == 0:
-            firstKeyPress = GetKeysFromImage(screenshotRegion)
-        else:
-            secondKeyPress = GetKeysFromImage(screenshotRegion)
+            if index == 0:
+                firstKeyPress = GetKeysFromImage(screenshotRegion)
+            else:
+                secondKeyPress = GetKeysFromImage(screenshotRegion)
 
+        if firstKeyPress is not None and secondKeyPress is not None:
+            break
+
+    # Key configuration
     print("Key images found!")
     print("Keys found! Key 1:" + str(firstKeyPress) + " | Key 2:" + str(secondKeyPress) + " |")
     firstKey = config.VK_CODE.get(firstKeyPress)
@@ -103,33 +114,52 @@ while True:
             breakWhile = True
             break
 
+        # Press firstKey and then sleep
         if isFirstKey:
             ctypes.windll.user32.keybd_event(firstKey, 0, 0, 0)
             time.sleep(lineTime * waitTimeMultiplicator)
             ctypes.windll.user32.keybd_event(firstKey, 0, 2, 0)
             isFirstKey = False
+        # Press secondKey and then sleep
         else:
             ctypes.windll.user32.keybd_event(secondKey, 0, 0, 0)
             time.sleep(lineTime * waitTimeMultiplicator)
             ctypes.windll.user32.keybd_event(secondKey, 0, 2, 0)
             isFirstKey = True
 
+        # Check if it's time to check the score
         if checkForScore >= config.checkIterationThreshold:
+            # If that's the case, take a screenshot of the score area, and then, convert it to text
             scoreScreenshot = config.TakeScreenshotInRegion(config.selectTopLeft, config.selectBottomRight)
-            scoreString = pytesseract.image_to_string(scoreScreenshot, config=customConfig)
-            checkForScore = 0
+            scoreString = pytesseract.image_to_string(scoreScreenshot, config= r'--oem 3 --psm 7')
 
+            # If it's possible, convert the text to an integer, and break the loop if possible
+            try:
+                score = int(scoreString)
+
+                # If the score is what is needed, press the space bar to send the score
+                if score >= config.scoreThreshold:
+                    ctypes.windll.user32.keybd_event(config.VK_CODE.get(' '), 0, 0, 0)
+                    break
+            # If it was not possible, the score may not be parseable
+            except:
+                score = 0
+
+            checkForScore = 0 # and reset the threshold
+
+        # Augment the score checking threshold
         checkForScore += 1
 
-        try:
-            score = int(scoreString)
-
-            if score >= config.scoreThreshold:
-                ctypes.windll.user32.keybd_event(config.VK_CODE.get(' '), 0, 0, 0)
-                break
-
-        except:
-            score = 0
-
+    # Break the loop if set to be broken
     if breakWhile:
         break
+
+    # Find the submit points image
+    print("Submitting points...")
+    FindImageAndMoveMouseTo(config.submitPointsImage)
+
+    # Close the game window as soon as it is found, as the score sending is an async task in the page
+    print("Closing the submit window...")
+    FindImageAndMoveMouseTo(config.closeImage)
+
+print("Bot killed")

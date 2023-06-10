@@ -111,9 +111,3 @@ def TakeScreenshotInRegion(top, bottom):
 
     selectedRegion = pyautogui.screenshot(region=(x1, y1, x2 - x1, y2 - y1))
     return selectedRegion
-
-if topLeft is not None:
-    selectedRegion = TakeScreenshotInRegion(selectTopLeft, selectBottomRight)
-    text = pytesseract.image_to_string(selectedRegion)
-else:
-    print("Region not defined")
