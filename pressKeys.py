@@ -72,6 +72,7 @@ keysFailsafe = False
 isFirstKey = True
 checkForScore = 0
 gamesPlayed = 0
+gamesUntilSleep = random.randint(20, 50)
 
 while True:
     # Not allowing the bot to go infinitely as there's a limit to the scores that can be submitted
@@ -79,6 +80,12 @@ while True:
     gamesPlayed += 1
     if gamesPlayed > config.gamesToPlay:
         break
+
+    if gamesPlayed >= gamesUntilSleep:
+        sleepTime = random.uniform(120, 300)
+        gamesUntilSleep = random.randint(5, 30)
+        print(f"Sleeping for {int(sleepTime / 60)} minutes...")
+        time.sleep(sleepTime)
 
     print("Looking the Start Game Button...")
     FindImageAndMoveMouseTo(config.startGameImage)
@@ -189,4 +196,4 @@ while True:
         print("Keys were not recognized correctly, restarting...")
         FindImageAndMoveMouseTo(config.restartGameImage)
 
-print("Bot killed")
+print("Stopped execution")
