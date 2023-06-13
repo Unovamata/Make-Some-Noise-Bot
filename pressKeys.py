@@ -34,7 +34,8 @@ def GetKeysFromImage(keyImage):
     gray = cv2.cvtColor(np.array(keyImage), cv2.COLOR_BGR2GRAY)
     _, binary_image = cv2.threshold(gray, 127, 255, cv2.THRESH_BINARY)
 
-    keyFormat = pytesseract.image_to_string(binary_image, lang='eng', config='--psm 6')
+    customConfig = r'--psm 6 -c tessedit_char_whitelist=ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+    keyFormat = pytesseract.image_to_string(binary_image, lang='eng', config=customConfig)
 
     keyFormat = keyFormat.replace(" ", "").replace("\n", "")
 
@@ -98,7 +99,7 @@ while True:
         screenshot = config.TakeScreenshot()
         keysString = []
 
-        for index, key in enumerate(pyautogui.locateAll(config.keyImage, screenshot, confidence=0.8)):
+        for index, key in enumerate(pyautogui.locateAll(config.keyImage, screenshot, confidence=0.6)):
             left, top, width, height = key
             left += 10
             top += 10
@@ -194,6 +195,7 @@ while True:
         FindImageAndMoveMouseTo(config.closeImage)
     else:
         print("Keys were not recognized correctly, restarting...")
+        gamesPlayed -= 1
         FindImageAndMoveMouseTo(config.restartGameImage)
 
 print("Stopped execution")
