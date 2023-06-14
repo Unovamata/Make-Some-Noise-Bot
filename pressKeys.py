@@ -84,9 +84,10 @@ while True:
 
     if gamesPlayed >= gamesUntilSleep:
         sleepTime = random.uniform(120, 300)
-        gamesUntilSleep = random.randint(5, 30)
+        gamesUntilSleep += random.randint(5, 30)
         print(f"Sleeping for {int(sleepTime / 60)} minutes...")
         time.sleep(sleepTime)
+
 
     print("Looking the Start Game Button...")
     FindImageAndMoveMouseTo(config.startGameImage)
