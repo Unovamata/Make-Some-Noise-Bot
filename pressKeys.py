@@ -54,10 +54,10 @@ def GetKeys(first, second):
 
     firstKey, secondKey = config.VK_CODE.get(ord(first)), config.VK_CODE.get(ord(second))
 
-def FindImageAndMoveMouseTo(image):
+def FindImageAndMoveMouseTo(image, confidence):
     while True:
         # Find the start game button
-        startGameFound = pyautogui.locate(image, config.TakeScreenshot(), confidence=0.6)
+        startGameFound = pyautogui.locate(image, config.TakeScreenshot(), confidence=confidence)
         mousePosition = ScrollToPosition(startGameFound)
 
         if mousePosition is not None:
@@ -90,7 +90,7 @@ while True:
 
 
     print("Looking the Start Game Button...")
-    FindImageAndMoveMouseTo(config.startGameImage)
+    FindImageAndMoveMouseTo(config.startGameImage, 0.7)
 
     print("Looking for key image...")
     firstKeyPress, secondKeyPress = None, None
@@ -189,14 +189,14 @@ while True:
     # Find the submit points image
     if keysFailsafe is False:
         print("Submitting points...")
-        FindImageAndMoveMouseTo(config.submitPointsImage)
+        FindImageAndMoveMouseTo(config.submitPointsImage, 0.6)
 
         # Close the game window as soon as it is found, as the score sending is an async task in the page
         print("Closing the submit window...")
-        FindImageAndMoveMouseTo(config.closeImage)
+        FindImageAndMoveMouseTo(config.closeImage, 0.7)
     else:
         print("Keys were not recognized correctly, restarting...")
         gamesPlayed -= 1
-        FindImageAndMoveMouseTo(config.restartGameImage)
+        FindImageAndMoveMouseTo(config.restartGameImage, 0.7)
 
 print("Stopped execution")

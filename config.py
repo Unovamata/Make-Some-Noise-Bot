@@ -19,7 +19,7 @@ keyImage = Image.open("Key.png")
 # Score threshold
 scoreThreshold = 2700
 checkIterationThreshold = random.randrange(30, 45)
-gamesToPlay = 301
+gamesToPlay = 189
 
 VK_CODE = {
     'A': 0x41, 'B': 0x42, 'C': 0x43, 'D': 0x44, 'E': 0x45,
