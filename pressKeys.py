@@ -84,7 +84,7 @@ while True:
 
     if gamesPlayed >= gamesUntilSleep:
         sleepTime = random.uniform(120, 300)
-        gamesUntilSleep += random.randint(5, 30)
+        gamesUntilSleep += random.randint(30, 60)
         print(f"Sleeping for {int(sleepTime / 60)} minutes...")
         time.sleep(sleepTime)
 
@@ -160,6 +160,7 @@ while True:
             # If it's possible, convert the text to an integer, and break the loop if possible
             try:
                 score = int(scoreString)
+                print(f"Current Score {score}")
 
                 # If the score is what is needed, press the space bar to send the score
                 if score >= config.scoreThreshold:
@@ -193,7 +194,7 @@ while True:
 
         # Close the game window as soon as it is found, as the score sending is an async task in the page
         print("Closing the submit window...")
-        FindImageAndMoveMouseTo(config.closeImage, 0.7)
+        FindImageAndMoveMouseTo(config.closeImage, 0.6)
     else:
         print("Keys were not recognized correctly, restarting...")
         gamesPlayed -= 1
