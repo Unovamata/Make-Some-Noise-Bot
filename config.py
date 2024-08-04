@@ -6,20 +6,24 @@ import numpy as np
 from PIL import ImageGrab, Image
 import pytesseract
 import random
+import os
+
+cd = os.getcwd()
 
 pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
 
 # Image recognition loading
-startGameImage = Image.open("Start Game.png")
-submitPointsImage = Image.open("Submit Points.png")
-restartGameImage = Image.open("Restart Game.png")
-closeImage = Image.open("Close.png")
-keyImage = Image.open("Key.png")
+startGameImage = Image.open(f"{cd}/Start Game.png")
+
+submitPointsImage = Image.open(f"{cd}/Submit Points.png")
+restartGameImage = Image.open(f"{cd}/Restart Game.png")
+closeImage = Image.open(f"{cd}/Close.png")
+keyImage = Image.open(f"{cd}/Key.png")
 
 # Score threshold
 scoreThreshold = 2700
 checkIterationThreshold = random.randrange(30, 45)
-gamesToPlay = 298
+gamesToPlay = 242
 
 VK_CODE = {
     'A': 0x41, 'B': 0x42, 'C': 0x43, 'D': 0x44, 'E': 0x45,

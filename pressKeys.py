@@ -54,18 +54,20 @@ def GetKeys(first, second):
 
     firstKey, secondKey = config.VK_CODE.get(ord(first)), config.VK_CODE.get(ord(second))
 
-def FindImageAndMoveMouseTo(image, confidence):
+def FindImageAndClick(image, confidence):
     while True:
         # Find the start game button
-        startGameFound = pyautogui.locate(image, config.TakeScreenshot(), confidence=confidence)
-        mousePosition = ScrollToPosition(startGameFound)
+        try:
+            element = pyautogui.locate(image, config.TakeScreenshot(), confidence=confidence)
+            mousePosition = ScrollToPosition(element)
 
-        if mousePosition is not None:
-            pyautogui.moveTo(mousePosition, duration=random.uniform(0.5, 1.2), tween=pyautogui.easeInOutQuad)
+            if mousePosition is not None:
+                pyautogui.moveTo(mousePosition, duration=random.uniform(0.5, 1.2), tween=pyautogui.easeInOutQuad)
 
-        if mousePosition == pyautogui.position():
-            pyautogui.leftClick()
-            break
+            if mousePosition == pyautogui.position():
+                pyautogui.leftClick()
+                return True
+        except: continue
 
 # Loop parameters
 breakWhile = False
@@ -90,7 +92,7 @@ while True:
 
 
     print("Looking the Start Game Button...")
-    FindImageAndMoveMouseTo(config.startGameImage, 0.7)
+    FindImageAndClick(config.startGameImage, 0.7)
 
     print("Looking for key image...")
     firstKeyPress, secondKeyPress = None, None
@@ -159,17 +161,17 @@ while True:
 
             # If it's possible, convert the text to an integer, and break the loop if possible
             try:
-                score = int(scoreString)
+                # Strip whitespace and remove non-digit characters
+                scoreString = ''.join(filter(str.isdigit, scoreString.strip()))
+                
+                # Convert to integer if the string is not empty, otherwise set score to 0
+                score = int(scoreString) if scoreString else 0
                 print(f"Current Score {score}")
 
                 # If the score is what is needed, press the space bar to send the score
                 if score >= config.scoreThreshold:
                     ctypes.windll.user32.keybd_event(config.VK_CODE.get(' '), 0, 0, 0)
                     break
-                else:
-                    if pyautogui.locate(config.restartGameImage, config.TakeScreenshot(), confidence=0.6):
-                        keysFailsafe = True
-                        break
             # If it was not possible, the score may not be parseable
             except:
                 score = 0
@@ -190,14 +192,14 @@ while True:
     # Find the submit points image
     if keysFailsafe is False:
         print("Submitting points...")
-        FindImageAndMoveMouseTo(config.submitPointsImage, 0.6)
+        FindImageAndClick(config.submitPointsImage, 0.6)
 
         # Close the game window as soon as it is found, as the score sending is an async task in the page
         print("Closing the submit window...")
-        FindImageAndMoveMouseTo(config.closeImage, 0.6)
+        FindImageAndClick(config.closeImage, 0.6)
     else:
         print("Keys were not recognized correctly, restarting...")
         gamesPlayed -= 1
-        FindImageAndMoveMouseTo(config.restartGameImage, 0.7)
+        FindImageAndClick(config.restartGameImage, 0.7)
 
 print("Stopped execution")
