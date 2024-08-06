@@ -49,11 +49,6 @@ def GetKeysFromImage(keyImage):
 firstKey, secondKey = None, None
 firstKeyPress, secondKeyPress = None, None
 
-def GetKeys(first, second):
-    global firstKey, secondKey
-
-    firstKey, secondKey = config.VK_CODE.get(ord(first)), config.VK_CODE.get(ord(second))
-
 def FindImageAndClick(image, confidence):
     while True:
         # Find the start game button
@@ -143,14 +138,18 @@ while True:
         # Press firstKey and then sleep
         if isFirstKey:
             ctypes.windll.user32.keybd_event(firstKey, 0, 0, 0)
+            ctypes.windll.user32.keybd_event(0x49, 0, 0, 0) # Press Down I key;
             time.sleep(lineTime * waitTimeMultiplicator)
             ctypes.windll.user32.keybd_event(firstKey, 0, 2, 0)
+            ctypes.windll.user32.keybd_event(0x49, 0, 2, 0) # Press Up I key;
             isFirstKey = False
         # Press secondKey and then sleep
         else:
             ctypes.windll.user32.keybd_event(secondKey, 0, 0, 0)
+            ctypes.windll.user32.keybd_event(0x51, 0, 0, 0) # Press Down Q key;
             time.sleep(lineTime * waitTimeMultiplicator)
             ctypes.windll.user32.keybd_event(secondKey, 0, 2, 0)
+            ctypes.windll.user32.keybd_event(0x51, 0, 2, 0) # Press Up Q key;
             isFirstKey = True
 
         # Check if it's time to check the score
