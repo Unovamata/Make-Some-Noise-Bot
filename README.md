@@ -4,7 +4,7 @@
 
 # Altador Cup - Make Some Noise!! Bot
 
-I made this bot to automatically play the "Make Some Noise!!" minigame during the Altador Cup site event on Neopets. 
+I made this bot to automatically play the "Make Some Noise!!" minigame during the Altador Cup site event on Neopets. This bot has computer vision to automatically send scores, detect keys to press, waiting to simulate breaks after a set number of submitted scores, and correct itself if any error occurred during the execution of the bot.
  
 **Table of Contents**
 
@@ -63,3 +63,5 @@ Press the **"S"** key in this window.
 <p align="center">
   <img src="https://raw.githubusercontent.com/Unovamata/Make-Some-Noise-Bot/main/Wiki/Window Tutorial 3.png" />
 </p>
+
+Have fun!
