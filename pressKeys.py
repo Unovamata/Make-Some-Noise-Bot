@@ -49,20 +49,28 @@ def GetKeysFromImage(keyImage):
 firstKey, secondKey = None, None
 firstKeyPress, secondKeyPress = None, None
 
-def FindImageAndClick(image, confidence):
+def FindImage(image, confidence, mode='single', click=True):
     while True:
-        # Find the start game button
         try:
-            element = pyautogui.locate(image, config.TakeScreenshot(), confidence=confidence)
-            mousePosition = ScrollToPosition(element)
+            if mode == 'single':
+                element = pyautogui.locate(image, config.TakeScreenshot(), confidence=confidence)
+                
+                if element:
+                    if click:
+                        mousePosition = ScrollToPosition(element)
+                    
+                        if mousePosition is not None:
+                            pyautogui.moveTo(mousePosition, duration=random.uniform(0.5, 1.2), tween=pyautogui.easeInOutQuad)
+                            if mousePosition == pyautogui.position():
+                                pyautogui.leftClick()
 
-            if mousePosition is not None:
-                pyautogui.moveTo(mousePosition, duration=random.uniform(0.5, 1.2), tween=pyautogui.easeInOutQuad)
-
-            if mousePosition == pyautogui.position():
-                pyautogui.leftClick()
-                return True
-        except: continue
+                    return True
+                    
+            elif mode == 'multiple':
+                elements = list(pyautogui.locateAll(image, config.TakeScreenshot(), confidence=confidence))
+                return elements
+        except:
+            continue
 
 # Loop parameters
 breakWhile = False
@@ -71,6 +79,7 @@ isFirstKey = True
 checkForScore = 0
 gamesPlayed = 0
 gamesUntilSleep = random.randint(20, 50)
+zeroScores = 0
 
 while True:
     # Not allowing the bot to go infinitely as there's a limit to the scores that can be submitted
@@ -87,7 +96,7 @@ while True:
 
 
     print("Looking the Start Game Button...")
-    FindImageAndClick(config.startGameImage, 0.7)
+    FindImage(config.startGameImage, 0.7)
 
     print("Looking for key image...")
     firstKeyPress, secondKeyPress = None, None
@@ -97,7 +106,7 @@ while True:
         screenshot = config.TakeScreenshot()
         keysString = []
 
-        for index, key in enumerate(pyautogui.locateAll(config.keyImage, screenshot, confidence=0.6)):
+        for index, key in enumerate(FindImage(config.keyImage, confidence=0.6, mode='multiple')):
             left, top, width, height = key
             left += 10
             top += 10
@@ -128,6 +137,7 @@ while True:
     scoreScreenshot = None
     scoreString = ""
     keysFailsafe = False
+    zeroScores = 0
 
     print("Pressing keys!")
     for lineTime in contentList:
@@ -160,6 +170,9 @@ while True:
 
             # If it's possible, convert the text to an integer, and break the loop if possible
             try:
+                if(zeroScores >= 4):
+                    raise ValueError("Invalid score")
+
                 # Strip whitespace and remove non-digit characters
                 scoreString = ''.join(filter(str.isdigit, scoreString.strip()))
                 
@@ -167,15 +180,20 @@ while True:
                 score = int(scoreString) if scoreString else 0
                 print(f"Current Score {score}")
 
+                if(score == 0): 
+                    zeroScores += 1
+
                 # If the score is what is needed, press the space bar to send the score
                 if score >= config.scoreThreshold:
                     ctypes.windll.user32.keybd_event(config.VK_CODE.get(' '), 0, 0, 0)
                     break
             # If it was not possible, the score may not be parseable
-            except:
+            except Exception as e:
                 score = 0
+                zeroScores = 0
+                ctypes.windll.user32.keybd_event(config.VK_CODE.get(' '), 0, 0, 0)
 
-                if pyautogui.locate(config.restartGameImage, config.TakeScreenshot(), confidence=0.6):
+                if FindImage(config.restartGameImage, confidence=0.6, click=True):
                     keysFailsafe = True
                     break
 
@@ -191,14 +209,10 @@ while True:
     # Find the submit points image
     if keysFailsafe is False:
         print("Submitting points...")
-        FindImageAndClick(config.submitPointsImage, 0.6)
+        FindImage(config.submitPointsImage, 0.6)
 
         # Close the game window as soon as it is found, as the score sending is an async task in the page
         print("Closing the submit window...")
-        FindImageAndClick(config.closeImage, 0.6)
-    else:
-        print("Keys were not recognized correctly, restarting...")
-        gamesPlayed -= 1
-        FindImageAndClick(config.restartGameImage, 0.7)
+        FindImage(config.closeImage, 0.6)
 
 print("Stopped execution")
