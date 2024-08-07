@@ -30,6 +30,7 @@ For this, you must download the installer and execute it in your machine. Do not
 
 # Setup
 
++ Download the "Make Some Noise!!" bot source files in the [Releases](https://github.com/Unovamata/Make-Some-Noise-Bot/releases/latest) page.
 + Download the files above and install TesseractOCR and Python.
 + Make sure you configure the PATH for Python and [TesseractOCR](https://www.youtube.com/watch?v=2kWvk4C1pMo). In the case of Python you can do this through the installer. **Read carefully to not skip this step.**
 + Once you have installed Python and configured its respective **"Environment Variable"**, run the **"install dependencies.bat"** file. This file will install all the libraries Python needs tp run the bot.
