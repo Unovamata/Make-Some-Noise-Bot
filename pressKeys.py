@@ -96,7 +96,7 @@ while True:
 
 
     print("Looking the Start Game Button...")
-    FindImage(config.startGameImage, 0.7)
+    FindImage(config.startGameImage, 0.3)
 
     print("Looking for key image...")
     firstKeyPress, secondKeyPress = None, None
