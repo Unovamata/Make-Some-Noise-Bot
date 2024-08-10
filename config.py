@@ -17,7 +17,6 @@ startGameImage = Image.open(f"{cd}/Start Game.png")
 
 submitPointsImage = Image.open(f"{cd}/Submit Points.png")
 restartGameImage = Image.open(f"{cd}/Restart Game.png")
-closeImage = Image.open(f"{cd}/Close.png")
 keyImage = Image.open(f"{cd}/Key.png")
 
 # Score threshold

@@ -8,6 +8,7 @@ import cv2
 from PIL import Image
 import pytesseract
 import numpy as np
+import matplotlib.pyplot as plt
 
 # Load timestamp list for key presses
 contentList = []
@@ -24,25 +25,10 @@ def ScrollToPosition(result):
     if result is not None:
         left, top, width, height = result
 
-        centerX = left + width // 2
-        centerY = top + height // 2
+        centerX = left + width // 1.2
+        centerY = top + height // 1.2
 
         return centerX, centerY
-    return None
-
-def GetKeysFromImage(keyImage):
-    gray = cv2.cvtColor(np.array(keyImage), cv2.COLOR_BGR2GRAY)
-    _, binary_image = cv2.threshold(gray, 127, 255, cv2.THRESH_BINARY)
-
-    customConfig = r'--psm 6 -c tessedit_char_whitelist=ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-    keyFormat = pytesseract.image_to_string(binary_image, lang='eng', config=customConfig)
-
-    keyFormat = keyFormat.strip()
-
-    # Ensure keyFormat contains only letters
-    if len(keyFormat) > 0 and keyFormat[0].isalpha():
-        return keyFormat[0].upper()  # Ensure uppercase
-    
     return None
 
 firstKey, secondKey = None, None
@@ -51,8 +37,10 @@ firstKeyPress, secondKeyPress = None, None
 def FindImage(image, confidence, mode='single', click=True):
     while True:
         try:
+            screenshot = config.TakeScreenshot()
+
             if mode == 'single':
-                element = pyautogui.locate(image, config.TakeScreenshot(), confidence=confidence)
+                element = pyautogui.locate(image, screenshot, confidence=confidence)
                 
                 if element:
                     if click:
@@ -66,8 +54,59 @@ def FindImage(image, confidence, mode='single', click=True):
                     return True
                     
             elif mode == 'multiple':
-                elements = list(pyautogui.locateAll(image, config.TakeScreenshot(), confidence=confidence))
-                return elements
+                # Convert images to grayscale
+                key = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2GRAY)
+                screenshot = cv2.cvtColor(screenshot, cv2.COLOR_BGR2GRAY)
+                instances = []
+
+                while True:
+                    # Initiate SIFT detector
+                    sift = cv2.SIFT_create()
+
+                    # Find the keypoints and descriptors with SIFT
+                    kp1, des1 = sift.detectAndCompute(key, None)
+                    kp2, des2 = sift.detectAndCompute(screenshot, None)
+
+                    # BFMatcher with default params
+                    bf = cv2.BFMatcher()
+                    matches = bf.knnMatch(des1, des2, k=2)
+
+                    # Apply ratio test
+                    good = []
+                    for m, n in matches:
+                        if m.distance < 0.75 * n.distance:
+                            good.append(m)
+
+                    # Get the matching keypoints
+                    points1 = np.zeros((len(good), 2), dtype=np.float32)
+                    points2 = np.zeros((len(good), 2), dtype=np.float32)
+
+                    for i, match in enumerate(good):
+                        points1[i, :] = kp1[match.queryIdx].pt
+                        points2[i, :] = kp2[match.trainIdx].pt
+
+                    # Find the bounding box
+                    if len(points1) > 0:
+                        left, top = np.min(points2, axis=0)
+                        width, height = np.max(points2, axis=0)
+
+                        keyImage = screenshot[int(top + 4):int(height - 6), int(left + 2):int(width - 2)]
+                        keyImage = cv2.cvtColor(np.array(keyImage), cv2.COLOR_GRAY2BGR)
+
+                        instances.append(keyImage)
+
+                        left -= 10
+                        top -= 10
+                        width += 20
+                        height += 20
+
+                        # Draw bounding boxes on the images
+                        screenshot = cv2.rectangle(screenshot, (int(left), int(top)), (int(width), int(height)), (0, 255, 0), thickness=-1)
+
+                        if len(instances) >= 2:
+                            break
+
+                return instances
         except:
             continue
 
@@ -101,26 +140,47 @@ while True:
     print("Looking for key image...")
     firstKeyPress, secondKeyPress = None, None
 
+    resetWhile = False
+
+    def GetKeysFromImage(keyImage):
+        gray = cv2.cvtColor(np.array(keyImage), cv2.COLOR_BGR2GRAY)
+        _, binary_image = cv2.threshold(gray, 127, 255, cv2.THRESH_BINARY)
+
+        customConfig = r'--psm 6 -c tessedit_char_whitelist=ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+        keyFormat = pytesseract.image_to_string(binary_image, lang='eng', config=customConfig)
+
+        keyFormat = keyFormat.strip()
+
+        # Ensure keyFormat contains only letters
+        if len(keyFormat) > 0 and keyFormat[0].isalpha():
+            return keyFormat[0].upper()  # Ensure uppercase
+        
+        return None
+
     # If the key is not valid, simply exit the current loop early and go to the next iteration
     def ExitEarly():
+        global resetWhile
+
         ctypes.windll.user32.keybd_event(config.VK_CODE.get(' '), 0, 0, 0)
         FindImage(config.restartGameImage, confidence=0.6, click=True)
+        resetWhile = True
         print("Key images could not be found... Restarting...")
 
-    def RecursiveDetectKey(key, screenshot, depth = 0, maxDepth = 2):
+    def RecursiveDetectKey(key, keyImage, depth = 0, maxDepth = 2, isSecond = False):
         if depth >= maxDepth:
             ExitEarly()
             return None
 
         if key is None:
-            key = GetKeysFromImage(screenshot)
+            key = GetKeysFromImage(keyImage)
+
+            if isSecond and firstKeyPress == secondKeyPress:
+                key = None
 
             if key is None:
-                return RecursiveDetectKey(key, screenshotRegion, depth + 1, maxDepth)
+                return RecursiveDetectKey(key, keyImage, depth + 1, maxDepth)
             
         return key
-
-    resetWhile = False
 
     while True:
         screenshot = config.TakeScreenshot()
@@ -138,28 +198,16 @@ while True:
 
         # Find the locations of the key image in the screenshot
         for index, key in enumerate(imagesFound):
-            left, top, width, height = key
-
-            left += 10
-            top += 10
-            width -= 20
-            height -= 20
-
-            # Crop the region from the screenshot using the bounding box
-            screenshotRegion = Image.fromarray(screenshot).crop((left, top, left + width, top + height))
             
             # Process the cropped region
             if index == 0 and firstKeyPress is None:
-                firstKeyPress = RecursiveDetectKey(firstKeyPress, screenshotRegion, 0, 2)
-
-                if firstKeyPress is None:
-                    resetWhile = True
+                firstKeyPress = RecursiveDetectKey(firstKeyPress, key, 0, 2)
                     
             elif index == 1 and secondKeyPress is None:
-                secondKeyPress = RecursiveDetectKey(secondKeyPress, screenshotRegion, 0, 2)
+                secondKeyPress = RecursiveDetectKey(secondKeyPress, key, 0, 2, isSecond = True)
 
-                if secondKeyPress is None:
-                    resetWhile = True
+                if secondKeyPress == firstKeyPress:
+                    ExitEarly()
 
         # Check if both keys are valid
         if firstKeyPress is not None and secondKeyPress is not None or resetWhile:
@@ -194,18 +242,14 @@ while True:
         # Press firstKey and then sleep
         if isFirstKey:
             ctypes.windll.user32.keybd_event(firstKey, 0, 0, 0)
-            ctypes.windll.user32.keybd_event(0x49, 0, 0, 0) # Press Down I key;
             time.sleep(lineTime * waitTimeMultiplicator)
             ctypes.windll.user32.keybd_event(firstKey, 0, 2, 0)
-            ctypes.windll.user32.keybd_event(0x49, 0, 2, 0) # Press Up I key;
             isFirstKey = False
         # Press secondKey and then sleep
         else:
             ctypes.windll.user32.keybd_event(secondKey, 0, 0, 0)
-            ctypes.windll.user32.keybd_event(0x51, 0, 0, 0) # Press Down Q key;
             time.sleep(lineTime * waitTimeMultiplicator)
             ctypes.windll.user32.keybd_event(secondKey, 0, 2, 0)
-            ctypes.windll.user32.keybd_event(0x51, 0, 2, 0) # Press Up Q key;
             isFirstKey = True
 
         # Check if it's time to check the score
@@ -239,7 +283,7 @@ while True:
                 zeroScores = 0
                 ctypes.windll.user32.keybd_event(config.VK_CODE.get(' '), 0, 0, 0)
 
-                if FindImage(config.restartGameImage, confidence=0.6, click=True):
+                if FindImage(config.restartGameImage, confidence=0.4, click=True):
                     keysFailsafe = True
                     break
 
@@ -255,10 +299,6 @@ while True:
     # Find the submit points image
     if keysFailsafe is False:
         print("Submitting points...")
-        FindImage(config.submitPointsImage, 0.6)
-
-        # Close the game window as soon as it is found, as the score sending is an async task in the page
-        print("Closing the submit window...")
-        FindImage(config.closeImage, 0.6)
+        FindImage(config.submitPointsImage, 0.4)
 
 print("Stopped execution")
