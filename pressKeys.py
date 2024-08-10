@@ -37,14 +37,13 @@ def GetKeysFromImage(keyImage):
     customConfig = r'--psm 6 -c tessedit_char_whitelist=ABCDEFGHIJKLMNOPQRSTUVWXYZ'
     keyFormat = pytesseract.image_to_string(binary_image, lang='eng', config=customConfig)
 
-    keyFormat = keyFormat.replace(" ", "").replace("\n", "")
+    keyFormat = keyFormat.strip()
 
-    try:
-        keyFormat = keyFormat[0]
-    except:
-        keyFormat = ""
-
-    return keyFormat
+    # Ensure keyFormat contains only letters
+    if len(keyFormat) > 0 and keyFormat[0].isalpha():
+        return keyFormat[0].upper()  # Ensure uppercase
+    
+    return None
 
 firstKey, secondKey = None, None
 firstKeyPress, secondKeyPress = None, None
@@ -72,6 +71,7 @@ def FindImage(image, confidence, mode='single', click=True):
         except:
             continue
 
+
 # Loop parameters
 breakWhile = False
 keysFailsafe = False
@@ -96,32 +96,77 @@ while True:
 
 
     print("Looking the Start Game Button...")
-    FindImage(config.startGameImage, 0.3)
+    FindImage(config.startGameImage, 0.4)
 
     print("Looking for key image...")
     firstKeyPress, secondKeyPress = None, None
 
-    # Search keys in a screenshot
+    # If the key is not valid, simply exit the current loop early and go to the next iteration
+    def ExitEarly():
+        ctypes.windll.user32.keybd_event(config.VK_CODE.get(' '), 0, 0, 0)
+        FindImage(config.restartGameImage, confidence=0.6, click=True)
+        print("Key images could not be found... Restarting...")
+
+    def RecursiveDetectKey(key, screenshot, depth = 0, maxDepth = 2):
+        if depth >= maxDepth:
+            ExitEarly()
+            return None
+
+        if key is None:
+            key = GetKeysFromImage(screenshot)
+
+            if key is None:
+                return RecursiveDetectKey(key, screenshotRegion, depth + 1, maxDepth)
+            
+        return key
+
+    resetWhile = False
+
     while True:
         screenshot = config.TakeScreenshot()
         keysString = []
 
-        for index, key in enumerate(FindImage(config.keyImage, confidence=0.6, mode='multiple')):
+        firstKeyPress = None
+        secondKeyPress = None
+
+        imagesFound = FindImage(config.keyImage, confidence=0.8, mode='multiple')
+
+        if len(imagesFound) <= 1:
+            resetWhile = True
+            ExitEarly()
+            break
+
+        # Find the locations of the key image in the screenshot
+        for index, key in enumerate(imagesFound):
             left, top, width, height = key
+
             left += 10
             top += 10
             width -= 20
             height -= 20
+
+            # Crop the region from the screenshot using the bounding box
             screenshotRegion = Image.fromarray(screenshot).crop((left, top, left + width, top + height))
+            
+            # Process the cropped region
+            if index == 0 and firstKeyPress is None:
+                firstKeyPress = RecursiveDetectKey(firstKeyPress, screenshotRegion, 0, 2)
 
-            if index == 0:
-                firstKeyPress = GetKeysFromImage(screenshotRegion)
-            else:
-                secondKeyPress = GetKeysFromImage(screenshotRegion)
+                if firstKeyPress is None:
+                    resetWhile = True
+                    
+            elif index == 1 and secondKeyPress is None:
+                secondKeyPress = RecursiveDetectKey(secondKeyPress, screenshotRegion, 0, 2)
 
-        if firstKeyPress is not None and secondKeyPress is not None:
-            if firstKeyPress != ' ' and secondKeyPress != ' ':
-                break
+                if secondKeyPress is None:
+                    resetWhile = True
+
+        # Check if both keys are valid
+        if firstKeyPress is not None and secondKeyPress is not None or resetWhile:
+            break
+
+    if resetWhile:
+        continue
 
     # Key configuration
     print("Key images found!")
@@ -138,6 +183,7 @@ while True:
     scoreString = ""
     keysFailsafe = False
     zeroScores = 0
+    maxFailedCycles = 2
 
     print("Pressing keys!")
     for lineTime in contentList:
@@ -170,7 +216,7 @@ while True:
 
             # If it's possible, convert the text to an integer, and break the loop if possible
             try:
-                if(zeroScores >= 4):
+                if(zeroScores >= maxFailedCycles):
                     raise ValueError("Invalid score")
 
                 # Strip whitespace and remove non-digit characters
