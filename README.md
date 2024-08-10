@@ -36,6 +36,7 @@ For this, you must download the installer and execute it in your machine. Do not
 + Once you have installed Python and configured its respective **"Environment Variable"**, run the **"install dependencies.bat"** file. This file will install all the libraries Python needs tp run the bot.
 + After the **"install dependencies.bat"** window closes, open the **"run.bat"** file in the bot's files.
 + A new window will open. You're now ready to configure the bot to play the game for you.
++ Set your display resolution to **1366x768** and set the zoom of the minigame page to **100%** if the script gives you any troubles.
 
 # Botting
 
